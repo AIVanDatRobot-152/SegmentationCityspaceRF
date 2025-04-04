@@ -1,0 +1,26 @@
+old:
+# Trích xuất đặc trưng HOG từ ảnh gốc
+    fd_hog, hog_image = hog(img_gray, orientations=4, pixels_per_cell=(64, 64),
+                           cells_per_block=(1, 1), visualize=True)
+    hog_image = exposure.rescale_intensity(hog_image, in_range=(0, 10))
+    
+    # Trích xuất đặc trưng Dense SIFT
+    sift = cv2.SIFT_create()
+    kp = [cv2.KeyPoint(x, y, 20) for y in range(0, IMG_HEIGHT, 40) 
+                               for x in range(0, IMG_WIDTH, 40)]
+    _, dense_sift = sift.compute(img_gray, kp)
+    if dense_sift is None:
+        dense_sift = np.zeros((len(kp), 128))
+    
+    # Kết hợp các đặc trưng
+    features = np.concatenate([
+        img_gray.flatten()/255.0,
+        edges.flatten()/255.0,
+        fd_hog,
+        dense_sift.flatten()
+    ])
+    
+    return features, label
+Kích thước dữ liệu đặc trưng: (2975, 51856)
+Kích thước nhãn: (2975, 24576)
+Lỗi khi xử lý dữ liệu: Unable to allocate 9.50 GiB for an array with shape (24576, 51856) and data type float64

@@ -1,0 +1,34 @@
+new
+height, width = img_gray.shape
+    hog_cell_size = min(32, height//3, width//3)  # Đảm bảo tối thiểu 3 ô mỗi chiều
+    fd_hog, hog_image = hog(img_gray, 
+                           orientations=4,
+                           pixels_per_cell=(hog_cell_size, hog_cell_size),
+                           cells_per_block=(1, 1),
+                           visualize=True)
+    hog_image = exposure.rescale_intensity(hog_image, in_range=(0, 10))
+    
+    # Điều chỉnh Dense SIFT cho ảnh nhỏ
+    sift_step = max(20, min(height, width)//5)  # Tự động tính step size
+    kp = [cv2.KeyPoint(x, y, 20) for y in range(0, height, sift_step) 
+                               for x in range(0, width, sift_step)]
+    
+    sift = cv2.SIFT_create()
+    _, dense_sift = sift.compute(img_gray, kp)
+    if dense_sift is None:
+        dense_sift = np.zeros((len(kp), 128))
+    
+    # Kết hợp các đặc trưng (phiên bản rút gọn)
+    features = np.concatenate([
+        fd_hog,
+        dense_sift.flatten()[:200],  # Chỉ lấy 200 giá trị đầu
+        [np.mean(img_gray)],         # Đặc trưng toàn cục
+        [np.mean(edges)],            # Thông tin biên trung bình
+        cv2.HuMoments(cv2.moments(img_gray)).flatten()  # 7 moments hình dạng
+    ])
+    
+    return features, label
+
+Kích thước dữ liệu đặc trưng: (2975, 305)
+Kích thước nhãn: (2975, 24576)
+Lỗi khi xử lý dữ liệu: Unable to allocate 57.2 MiB for an array with shape (24576, 305) and data type float64
